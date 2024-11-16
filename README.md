@@ -10,6 +10,30 @@ A robust Python library for streaming code generation using OpenAI's API, with r
 - Customizable chunk processing
 - Comprehensive testing suite
 
+## Notable Implementation Decisions
+
+### Chunk Processing
+
+- All chunks (including empty) are counted for accurate progress tracking
+- Token counting only processes non-empty chunks for efficiency
+
+### Prompt Responses
+- final response  to the user includes:
+- prompt response from the llm output in the console
+- time taken to complete prompt output in the console
+- Total tokens processed output in the console
+
+### Error Handling
+
+- Custom error classes for API and stream processing errors
+- Configurable retry attempts with exponential backoff
+
+
+### Testing Strategy
+
+- Comprehensive test cases cover different aspects of the StreamingCodeGenerator class, such as basic functionality, error handling, code quality, and the ability to process multiple requests concurrently.
+- Uses pytest and pytest-asyncio for async testing support
+
 ## Project Structure
 ```
 streaming-code-generator/
@@ -79,9 +103,7 @@ Run the test suite:
 pytest test/streaming_code_generator.py -v
 ```
 
-### Known Issues and Solutions
 
-- The chunk processing count may mismatch between StreamStats and actual chunks due to empty chunk handling. This was fixed by ensuring all chunks are counted in the progress tracking, while still maintaining accurate token counting for non-empty chunks.
 
 ## Key Components
 
