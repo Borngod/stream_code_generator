@@ -158,12 +158,9 @@ class StreamingCodeGenerator:
                 # Format the incoming chunk 
                 formatted_chunk = self.format_chunk(chunk)
                 
-                 # increment chunks_processed, even for empty chunks and
-                 # Increment the counter for processed chunks
-              
-
                 # If the formatted chunk is valid (not empty or None), process it
                 if formatted_chunk:
+                    # Increment the counter for processed chunks
                     self.stats.chunks_processed += 1
                     # Count the number of tokens (words) in the chunk and update the total tokens
                     self.stats.total_tokens += len(formatted_chunk.split())
