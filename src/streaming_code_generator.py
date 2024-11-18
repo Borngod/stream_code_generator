@@ -144,8 +144,8 @@ class StreamingCodeGenerator:
             Returns:
                  A single string that combines all processed chunks from the stream.
         """
-        # Initialize a list to hold all chunks of the response as they come in.
-        complete_response = []
+        # Initialize an accumulator for tracking the full response while streaming
+        full_response = ""
 
         try:
               # Iterate over each chunk of data in the API stream
@@ -166,21 +166,14 @@ class StreamingCodeGenerator:
                 if formatted_chunk:
                     # Count the number of tokens (words) in the chunk and update the total tokens
                     self.stats.total_tokens += len(formatted_chunk.split())
-
-                # Use an asynchronous executor to run the `callback` function.
-                # This allows the processing of the formatted chunk without blocking the event loop.
-                await asyncio.get_event_loop().run_in_executor(
-                    None, callback, formatted_chunk
-                )
+                    # Add to full response
+                    full_response += formatted_chunk
+                    # Immediately stream the chunk
+                    callback(formatted_chunk)
 
                 # If a progress tracking callback is provided, use it to report the current stats.
                 if progress_callback:
-                    await asyncio.get_event_loop().run_in_executor(
-                        None, progress_callback, self.stats
-                    )
-
-                # Append the formatted chunk to the list of responses
-                complete_response.append(formatted_chunk)
+                    progress_callback(self.stats)
 
             # Pause briefly to yield control back to the event loop, preventing CPU overuse.
             await asyncio.sleep(0.01)
@@ -202,12 +195,9 @@ class StreamingCodeGenerator:
 
         # If a progress callback is provided, make a final call to indicate that processing is done.
         if progress_callback:
-            await asyncio.get_event_loop().run_in_executor(
-                None, progress_callback, self.stats
-            )
+            progress_callback(self.stats)
 
-        # Join all chunks in the `complete_response` list into a single string and return it.
-        return "".join(complete_response)
+        return full_response
 
     def format_chunk(self, chunk: Any) -> str:
         """
@@ -218,7 +208,7 @@ class StreamingCodeGenerator:
                 a field that includes the content we want to extract.
                 
         Returns:
-            Formatted string extracted from the chunk. If there’s an error or the content
+            Formatted string extracted from the chunk. If there's an error or the content
             is missing, returns an empty string.
         """
         
@@ -250,21 +240,15 @@ async def main():
     def print_chunk(chunk: str):
         print(chunk, end="", flush=True)
     
-    def print_progress(stats: StreamStats):
-        print(f"\rProcessed {stats.chunks_processed} chunks, {stats.total_tokens} tokens...", 
-              end="", flush=True)
-    
     
     try:
         # Generate with progress tracking
         result = await generator.generate_code_with_explanation(
             prompt,
             print_chunk,
-            progress_callback=print_progress
         )
         
-        print("\n\n--- Final Response ---")
-        print(result["text"])
+        print("\n\n--- Generation Complete ---")
         print(f"Time taken: {result['completion_time']:.2f} seconds")
         print(f"Total tokens: {result['stats'].total_tokens}")
         
@@ -275,4 +259,3 @@ async def main():
 
 if __name__ == "__main__":
     asyncio.run(main())
-
